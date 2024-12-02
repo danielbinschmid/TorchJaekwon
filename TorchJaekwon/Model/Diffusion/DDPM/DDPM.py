@@ -14,6 +14,11 @@ from TorchJaekwon.Util.UtilTorch import UtilTorch
 from TorchJaekwon.Model.Diffusion.DDPM.DiffusionUtil import DiffusionUtil
 from TorchJaekwon.Model.Diffusion.DDPM.BetaSchedule import BetaSchedule
 
+class DDPMOutput:
+
+    def __init__(self, x: torch.Tensor) -> None:
+        self.x = x
+
 class DDPM(nn.Module):
     def __init__(self,
                  model_class_name:Optional[str] = None,
@@ -70,7 +75,7 @@ class DDPM(nn.Module):
         self.log_one_minus_alphas_cumprod:Tensor = UtilTorch.register_buffer(model = self, variable_name = 'log_one_minus_alphas_cumprod', value = np.log(1. - alphas_cumprod))
         self.sqrt_recip_alphas_cumprod:Tensor = UtilTorch.register_buffer(model = self, variable_name = 'sqrt_recip_alphas_cumprod', value = np.sqrt(1. / alphas_cumprod))
         self.sqrt_recipm1_alphas_cumprod:Tensor = UtilTorch.register_buffer(model = self, variable_name = 'sqrt_recipm1_alphas_cumprod', value = np.sqrt(1. / alphas_cumprod - 1))
-
+        
         # calculations for posterior q(x_{t-1} | x_t, x_0)
         posterior_variance = betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)
         # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
@@ -86,7 +91,7 @@ class DDPM(nn.Module):
                 cond:Optional[Union[dict,Tensor]] = None,
                 is_cond_unpack:bool = False,
                 stage: Literal['train', 'infer'] = 'train'
-                ) -> Tensor: # return loss value or sample
+                ) -> Tensor | DDPMOutput: # return loss value or sample
         '''
         train diffusion model. 
         return diffusion loss
@@ -112,7 +117,6 @@ class DDPM(nn.Module):
         noise:Tensor = UtilData.default(noise, lambda: torch.randn_like(x_start))
         x_noisy:Tensor = self.q_sample(x_start=x_start, t=t, noise=noise)
         model_output:Tensor = self.apply_model(x_noisy, t, cond, is_cond_unpack)
-
         if self.model_output_type == 'x_start':
             target:Tensor = x_start
         elif self.model_output_type == 'noise':
@@ -240,7 +244,7 @@ class DDPM(nn.Module):
     def preprocess(self, x_start:Tensor, cond:Optional[Union[dict,Tensor]] = None) -> Tuple[Tensor, Optional[Union[dict,Tensor]], dict]:
         return x_start, cond, None
 
-    def postprocess(self, x:Tensor, additional_data_dict:dict) -> Tensor:
+    def postprocess(self, x:Tensor, additional_data_dict:dict) -> DDPMOutput:
         return x
 
     def apply_model(self,
