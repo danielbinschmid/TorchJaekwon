@@ -1,5 +1,5 @@
 #type
-from typing import Union,Dict
+from typing import Union,Dict, Optional
 from numpy import ndarray
 from torch import Tensor
 
@@ -104,8 +104,8 @@ class UtilAudioSTFT(UtilAudio):
 
     @staticmethod
     def spec_to_figure(spec,
-                       vmin:float = -6.0, 
-                       vmax:float = 1.5,
+                       vmin:Optional[float] = -6.0, 
+                       vmax:Optional[float] = 1.5,
                        fig_size:tuple = (12,6),
                        dpi = 400,
                        transposed=False,
