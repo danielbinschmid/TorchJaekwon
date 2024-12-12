@@ -4,7 +4,7 @@ from torch import Tensor, device
 import torch
 from tqdm import tqdm
 from TorchJaekwon.Util.UtilTorch import UtilTorch
-from TorchJaekwon.Model.Diffusion.DDPM import DDPM
+from TorchJaekwon.Model.Diffusion.DDPM.DDPM import DDPM, DDPMOutput
 
 class DiffusersWrapper:
     @staticmethod
@@ -20,7 +20,7 @@ class DiffusersWrapper:
     def get_diffusers_scheduler_config(ddpm_module: DDPM, scheduler_args: dict):
         config:dict = {
             'num_train_timesteps': ddpm_module.timesteps,
-            'trained_betas': ddpm_module.betas.to('cpu'),
+            'trained_betas': ddpm_module.betas.to('cpu').detach().numpy(),
             'prediction_type': DiffusersWrapper.get_diffusers_output_type_name(ddpm_module),
         }
         config.update(scheduler_args)
@@ -37,13 +37,13 @@ class DiffusersWrapper:
         scheduler_args: dict = {'timestep_spacing': 'trailing'},
         cfg_scale: float = None,
         device:device = None
-        ) -> Tensor:
+        ) -> DDPMOutput:
         
         noise_scheduler = diffusers_scheduler_class(**DiffusersWrapper.get_diffusers_scheduler_config(ddpm_module, scheduler_args))
         _, cond, additional_data_dict = ddpm_module.preprocess(x_start = None, cond=cond)
         if x_shape is None: x_shape = ddpm_module.get_x_shape(cond=cond)
         noise_scheduler.set_timesteps(num_steps)
-        model_device:device = UtilTorch.get_model_device(ddpm_module) if device is None else device
+        model_device: "device" = UtilTorch.get_model_device(ddpm_module) if device is None else device
         x:Tensor = torch.randn(x_shape, device = model_device)
         x = x * noise_scheduler.init_noise_sigma
         for t in tqdm(noise_scheduler.timesteps, desc='sample time step'):
