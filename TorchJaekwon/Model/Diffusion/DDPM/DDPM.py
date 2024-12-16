@@ -85,6 +85,16 @@ class DDPM(nn.Module):
         self.posterior_mean_coef1:Tensor = UtilTorch.register_buffer(model = self, variable_name = 'posterior_mean_coef1', value = betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod))
         self.posterior_mean_coef2:Tensor = UtilTorch.register_buffer(model = self, variable_name = 'posterior_mean_coef2', value = (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod))
     
+    def sample_rndn_x0(
+        self,
+        cond
+    ) -> torch.Tensor:
+        """
+        x0 latent will reside on CPU initially.
+        """
+        x_shape = self.get_x_shape(cond)
+        return torch.randn(x_shape)
+
     def forward(self,
                 x_start:Optional[Tensor] = None,
                 x_shape:Optional[tuple] = None,

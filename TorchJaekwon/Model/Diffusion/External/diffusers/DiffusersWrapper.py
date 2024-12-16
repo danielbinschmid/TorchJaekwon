@@ -36,7 +36,8 @@ class DiffusersWrapper:
         num_steps: int = 20,
         scheduler_args: dict = {'timestep_spacing': 'trailing'},
         cfg_scale: float = None,
-        device:device = None
+        device:device = None,
+        x_start: Optional[torch.Tensor] = None
         ) -> DDPMOutput:
         
         noise_scheduler = diffusers_scheduler_class(**DiffusersWrapper.get_diffusers_scheduler_config(ddpm_module, scheduler_args))
@@ -44,7 +45,7 @@ class DiffusersWrapper:
         if x_shape is None: x_shape = ddpm_module.get_x_shape(cond=cond)
         noise_scheduler.set_timesteps(num_steps)
         model_device: "device" = UtilTorch.get_model_device(ddpm_module) if device is None else device
-        x:Tensor = torch.randn(x_shape, device = model_device)
+        x:Tensor = torch.randn(x_shape, device = model_device) if x_start is None else x_start
         x = x * noise_scheduler.init_noise_sigma
         for t in tqdm(noise_scheduler.timesteps, desc='sample time step'):
             denoiser_input = noise_scheduler.scale_model_input(x, t)
