@@ -39,7 +39,8 @@ class DiffusersWrapper:
         cfg_scale: float = None,
         device:device = None,
         x_start: Optional[torch.Tensor] = None,
-        delta_h: Optional[torch.nn.Module] = None
+        delta_h: Optional[torch.nn.Module] = None,
+        use_asyrp: bool = False,
         ) -> DDPMOutput:
         
         noise_scheduler = diffusers_scheduler_class(**DiffusersWrapper.get_diffusers_scheduler_config(ddpm_module, scheduler_args))
@@ -55,18 +56,33 @@ class DiffusersWrapper:
             
             t_tensor = torch.full((x_shape[0],), t, device=model_device, dtype=torch.long)
             
+            
+    
+            denoiser_input = noise_scheduler.scale_model_input(x, t)
+
+            if use_asyrp:
+                with torch.no_grad():
+                    model_output_no_delta_h = ddpm_module.apply_model(denoiser_input, 
+                                                        t_tensor, 
+                                                        cond, 
+                                                        is_cond_unpack, 
+                                                        cfg_scale = ddpm_module.cfg_scale if cfg_scale is None else cfg_scale)
+            
             # hspace steering
             if delta_h is not None and cond is not None:
                 delta_h_cond = delta_h.forward(t_tensor)
                 cond["delta_h"] = delta_h_cond
-    
-            denoiser_input = noise_scheduler.scale_model_input(x, t)
+
             model_output = ddpm_module.apply_model(denoiser_input, 
                                                    t_tensor, 
                                                    cond, 
                                                    is_cond_unpack, 
                                                    cfg_scale = ddpm_module.cfg_scale if cfg_scale is None else cfg_scale)
-            x = noise_scheduler.step( model_output, t, x, return_dict=False)[0]
+            
+            if use_asyrp:
+                x = noise_scheduler.step_asyrp( model_output_no_delta_h, model_output, t, x, return_dict=False)[0]
+            else:
+                x = noise_scheduler.step( model_output, t, x, return_dict=False)[0]
         
         return ddpm_module.postprocess(x, additional_data_dict)
         
