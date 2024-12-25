@@ -6,6 +6,7 @@ from tqdm import tqdm
 from TorchJaekwon.Util.UtilTorch import UtilTorch
 from TorchJaekwon.Model.Diffusion.DDPM.DDPM import DDPM, DDPMOutput
 from typing import Literal
+from TorchJaekwon.Model.Diffusion.Editing import DeltaHBase
 
 class DiffusersWrapper:
     @staticmethod
@@ -39,7 +40,7 @@ class DiffusersWrapper:
         cfg_scale: float = None,
         device:device = None,
         x_start: Optional[torch.Tensor] = None,
-        delta_h: Optional[torch.nn.Module] = None,
+        delta_h: Optional[DeltaHBase] = None,
         use_asyrp: bool = False,
         ) -> DDPMOutput:
         
@@ -70,8 +71,10 @@ class DiffusersWrapper:
             
             # hspace steering
             if delta_h is not None and cond is not None:
-                delta_h_cond = delta_h.forward(t_tensor)
-                cond["delta_h"] = delta_h_cond
+                delta_h.pre_forward_hook({
+                    "t_idx": t
+                })
+                cond["delta_h"] = delta_h
 
             model_output = ddpm_module.apply_model(denoiser_input, 
                                                    t_tensor, 
