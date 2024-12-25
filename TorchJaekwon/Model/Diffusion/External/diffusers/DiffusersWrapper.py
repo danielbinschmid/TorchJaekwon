@@ -69,13 +69,14 @@ class DiffusersWrapper:
                                                         cfg_scale = ddpm_module.cfg_scale if cfg_scale is None else cfg_scale)
             
             # hspace steering
+            cond_ = cond.copy()
             if delta_h is not None and cond is not None:
                 delta_h_cond = delta_h.forward(t_tensor)
-                cond["delta_h"] = delta_h_cond
+                cond_["delta_h"] = delta_h_cond
 
             model_output = ddpm_module.apply_model(denoiser_input, 
                                                    t_tensor, 
-                                                   cond, 
+                                                   cond_, 
                                                    is_cond_unpack, 
                                                    cfg_scale = ddpm_module.cfg_scale if cfg_scale is None else cfg_scale)
             
