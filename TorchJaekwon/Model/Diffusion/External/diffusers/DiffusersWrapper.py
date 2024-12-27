@@ -72,12 +72,10 @@ class DiffusersWrapper:
             # hspace steering
             cond_ = cond.copy()
             if delta_h is not None and cond is not None:
-                delta_h_cond = delta_h.forward(
-                    h=None,
-                    t_emb=None,
-                    t=t_tensor
-                )
-                cond_["delta_h"] = delta_h_cond
+                delta_h.pre_forward({
+                    "t_idx": t
+                })
+                cond_["delta_h"] = delta_h
 
             model_output = ddpm_module.apply_model(denoiser_input, 
                                                    t_tensor, 
