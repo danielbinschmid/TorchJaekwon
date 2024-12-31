@@ -18,6 +18,9 @@ class DDPMOutput:
 
     def __init__(self, x: torch.Tensor) -> None:
         self.x = x
+    
+    def to_cpu(self) -> None:
+        self.x = self.x.to("cpu")
 
 class DDPM(nn.Module):
     def __init__(self,
