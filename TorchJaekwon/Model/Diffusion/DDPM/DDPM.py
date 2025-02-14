@@ -90,13 +90,14 @@ class DDPM(nn.Module):
     
     def sample_rndn_x0(
         self,
-        cond
+        cond,
+        generator=None
     ) -> torch.Tensor:
         """
         x0 latent will reside on CPU initially.
         """
         x_shape = self.get_x_shape(cond)
-        return torch.randn(x_shape)
+        return torch.randn(x_shape,generator=generator)
 
     def forward(self,
                 x_start:Optional[Tensor] = None,
