@@ -42,6 +42,7 @@ class DiffusersWrapper:
         x_start: Optional[torch.Tensor] = None,
         delta_h: Optional[DeltaHBase] = None,
         use_asyrp: bool = False,
+        inference_adapter: Optional[torch.nn.Module] = None
         ) -> DDPMOutput:
         
         noise_scheduler = diffusers_scheduler_class(**DiffusersWrapper.get_diffusers_scheduler_config(ddpm_module, scheduler_args))
@@ -72,11 +73,20 @@ class DiffusersWrapper:
             # hspace steering
             cond_ = cond.copy()
             if delta_h is not None and cond is not None:
+                assert is_cond_unpack
+
                 delta_h.pre_forward({
                     "t_idx": t,
                     "idx": idx
                 })
                 cond_["delta_h"] = delta_h
+
+            if inference_adapter is not None and cond is not None:
+                assert is_cond_unpack
+
+                downblock_residuals, midblock_residual = inference_adapter.forward(idx)
+                cond["mid_block_additional_residual"] = midblock_residual
+                cond["down_block_additional_residuals"] = downblock_residuals
 
             model_output = ddpm_module.apply_model(denoiser_input, 
                                                    t_tensor, 
