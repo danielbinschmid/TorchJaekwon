@@ -53,7 +53,7 @@ class DiffusersWrapper:
         
         x:Tensor = torch.randn(x_shape, device = model_device) if x_start is None else x_start
         x = x * noise_scheduler.init_noise_sigma
-        for t in tqdm(noise_scheduler.timesteps, desc='sample time step'):
+        for idx, t in enumerate(tqdm(noise_scheduler.timesteps, desc='sample time step')):
             
             t_tensor = torch.full((x_shape[0],), t, device=model_device, dtype=torch.long)
             
@@ -73,7 +73,8 @@ class DiffusersWrapper:
             cond_ = cond.copy()
             if delta_h is not None and cond is not None:
                 delta_h.pre_forward({
-                    "t_idx": t
+                    "t_idx": t,
+                    "idx": idx
                 })
                 cond_["delta_h"] = delta_h
 
