@@ -42,7 +42,9 @@ class DiffusersWrapper:
         x_start: Optional[torch.Tensor] = None,
         delta_h: Optional[DeltaHBase] = None,
         use_asyrp: bool = False,
-        inference_adapter: Optional[torch.nn.Module] = None
+        inference_adapter: Optional[torch.nn.Module] = None,
+        start_from_time_index: int = 0,
+        return_intermediate_latent_at_index: Optional[int] = None
         ) -> DDPMOutput:
         
         noise_scheduler = diffusers_scheduler_class(**DiffusersWrapper.get_diffusers_scheduler_config(ddpm_module, scheduler_args))
@@ -56,9 +58,14 @@ class DiffusersWrapper:
         x = x * noise_scheduler.init_noise_sigma
         for idx, t in enumerate(tqdm(noise_scheduler.timesteps, desc='sample time step')):
             
+            if return_intermediate_latent_at_index is not None:
+                if idx == return_intermediate_latent_at_index:
+                    additional_data_dict["intermediate_res"] = x.detach().clone()
+                    
+            if idx < start_from_time_index:
+                continue
+
             t_tensor = torch.full((x_shape[0],), t, device=model_device, dtype=torch.long)
-            
-            
     
             denoiser_input = noise_scheduler.scale_model_input(x, t)
 
@@ -98,6 +105,8 @@ class DiffusersWrapper:
                 x = noise_scheduler.step_asyrp( model_output_no_delta_h, model_output, t, x, return_dict=False)[0]
             else:
                 x = noise_scheduler.step( model_output, t, x, return_dict=False)[0]
+            
+            
         
         return ddpm_module.postprocess(x, additional_data_dict)
         

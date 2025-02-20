@@ -16,11 +16,14 @@ from TorchJaekwon.Model.Diffusion.DDPM.BetaSchedule import BetaSchedule
 
 class DDPMOutput:
 
-    def __init__(self, x: torch.Tensor) -> None:
+    def __init__(self, x: torch.Tensor, intermediate_res: Optional[torch.Tensor] = None) -> None:
         self.x = x
+        self.intermediate_res = intermediate_res
     
     def to_cpu(self) -> None:
         self.x = self.x.to("cpu")
+        if self.intermediate_res is not None:
+            self.intermediate_res = self.intermediate_res.to("cpu")
 
 class DDPM(nn.Module):
     def __init__(self,
